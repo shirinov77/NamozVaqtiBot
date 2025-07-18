@@ -26,6 +26,12 @@
             <artifactId>json</artifactId>
             <version>20231013</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.7.7</version>
+        </dependency>
     </dependencies>
 
 

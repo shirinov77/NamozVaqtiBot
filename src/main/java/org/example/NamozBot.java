@@ -25,6 +25,11 @@ public class NamozBot extends TelegramLongPollingBot {
     private final Map<String, String> lastPrayerType = new HashMap<>(); // chatId -> last prayer type (today, tomorrow, week)
     private final Map<String, String> lastMessageText = new HashMap<>(); // chatId -> last message text
 
+    public NamozBot() {
+        // Ma'lumotlar bazasini boshlash
+        DatabaseUtil.initDatabase();
+    }
+
     @Override
     public String getBotUsername() {
         return "Namoz Vaqtlari Bot";
@@ -59,6 +64,8 @@ public class NamozBot extends TelegramLongPollingBot {
                 }
             } else if (update.hasMessage() && update.getMessage().hasLocation()) {
                 handleLocation(update);
+            } else if (update.hasMessage() && update.getMessage().hasContact()) {
+                handleContact(update);
             } else if (update.hasCallbackQuery()) {
                 handleCallbackQuery(update);
             }
@@ -72,6 +79,14 @@ public class NamozBot extends TelegramLongPollingBot {
         String language = userLanguages.getOrDefault(chatId, "uz");
         String currentTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
+        // Foydalanuvchi ma'lumotlarini olish
+        String username = update.getMessage().getFrom().getUserName();
+        String nickname = update.getMessage().getFrom().getFirstName();
+        String phoneNumber = null; // Telefon raqami keyinroq contact orqali yuborilishi mumkin
+
+        // Foydalanuvchi ma'lumotlarini ma'lumotlar bazasiga saqlash
+        DatabaseUtil.saveUser(chatId, username != null ? username : "", nickname != null ? nickname : "", phoneNumber);
+
         // Send welcome message
         String welcomeText = LanguageUtil.getMessage("welcome_message", language) + "\n🕒 " +
                 LanguageUtil.getMessage("current_time", language) + ": " + currentTime;
@@ -83,7 +98,7 @@ public class NamozBot extends TelegramLongPollingBot {
         lastMessageIds.put(chatId, sentWelcome.getMessageId());
         lastMessageText.put(chatId, welcomeText);
 
-        // Prompt for location
+        // Prompt for location and contact
         String locationPrompt = LanguageUtil.getMessage("send_location_prompt", language);
         SendMessage locationMessage = new SendMessage();
         locationMessage.setChatId(chatId);
@@ -92,6 +107,25 @@ public class NamozBot extends TelegramLongPollingBot {
         org.telegram.telegrambots.meta.api.objects.Message sentLocationPrompt = execute(locationMessage);
         lastMessageIds.put(chatId, sentLocationPrompt.getMessageId());
         lastMessageText.put(chatId, locationPrompt);
+    }
+
+    private void handleContact(Update update) throws TelegramApiException {
+        String chatId = update.getMessage().getChatId().toString();
+        String phoneNumber = update.getMessage().getContact().getPhoneNumber();
+        String language = userLanguages.getOrDefault(chatId, "uz");
+
+        // Telefon raqamini ma'lumotlar bazasida yangilash
+        DatabaseUtil.updateUserPhoneNumber(chatId, phoneNumber);
+
+        // Foydalanuvchiga tasdiqlash xabari
+        String confirmationText = LanguageUtil.getMessage("phone_saved", language);
+        SendMessage message = new SendMessage();
+        message.setChatId(chatId);
+        message.setText(confirmationText);
+        message.setReplyMarkup(keyboardUtil.getMainMenu(language));
+        org.telegram.telegrambots.meta.api.objects.Message sentMessage = execute(message);
+        lastMessageIds.put(chatId, sentMessage.getMessageId());
+        lastMessageText.put(chatId, confirmationText);
     }
 
     private void handleLanguageCommand(Update update) throws TelegramApiException {
@@ -158,7 +192,8 @@ public class NamozBot extends TelegramLongPollingBot {
         String chatId = update.getCallbackQuery().getMessage().getChatId().toString();
         String callbackData = update.getCallbackQuery().getData();
         String language = userLanguages.getOrDefault(chatId, "uz");
-        Integer messageId = update.getCallbackQuery().getMessage().getMessageId(); // Use callback query message ID
+        Integer messageId = update.getCallbackQuery().getMessage().getMessageId();
+
         System.out.println("Callback received for chatId " + chatId + ": callbackData = " + callbackData);
 
         EditMessageText message = new EditMessageText();
@@ -189,6 +224,10 @@ public class NamozBot extends TelegramLongPollingBot {
         } else if (callbackData.startsWith("notif_")) {
             String status = callbackData.split("_")[1];
             newText = LanguageUtil.getMessage("notifications_" + status, language);
+        } else if (callbackData.equals("tasbih")) {
+            newText = LanguageUtil.getMessage("tasbih", language) + ":\n" +
+                    "📿 Elektron tasbihni ochish uchun quyidagi havolaga o‘ting:\n" +
+                    "https://your-tasbih-app.netlify.app"; // O‘zingizning URL manzilingizni qo‘ying
         } else {
             if (!userLocations.containsKey(chatId)) {
                 newText = LanguageUtil.getMessage("send_location_prompt", language);

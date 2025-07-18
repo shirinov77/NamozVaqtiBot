@@ -15,6 +15,7 @@ public class LanguageUtil {
         uz.put("tomorrow", "Ertaga");
         uz.put("week", "Hafta");
         uz.put("send_location", "Joylashuv yuboring");
+        uz.put("send_contact", "Telefon raqamini yuboring");
         uz.put("location", "Joylashuv");
         uz.put("fajr", "Bomdod");
         uz.put("dhuhr", "Peshin");
@@ -33,6 +34,8 @@ public class LanguageUtil {
         uz.put("notifications_off", "🔕 Bildirishnomalar o'chirildi!");
         uz.put("current_time", "Hozirgi vaqt");
         uz.put("unknown_location", "Noma'lum joylashuv");
+        uz.put("phone_saved", "📱 Telefon raqami saqlandi!");
+        uz.put("tasbih", "Elektron Tasbih");
         translations.put("uz", uz);
 
         Map<String, String> en = new HashMap<>();
@@ -43,6 +46,7 @@ public class LanguageUtil {
         en.put("tomorrow", "Tomorrow");
         en.put("week", "Week");
         en.put("send_location", "Send Location");
+        en.put("send_contact", "Send Contact");
         en.put("location", "Location");
         en.put("fajr", "Fajr");
         en.put("dhuhr", "Dhuhr");
@@ -61,6 +65,8 @@ public class LanguageUtil {
         en.put("notifications_off", "🔕 Notifications disabled!");
         en.put("current_time", "Current time");
         en.put("unknown_location", "Unknown location");
+        en.put("phone_saved", "📱 Phone number saved!");
+        en.put("tasbih", "Electronic Tasbih");
         translations.put("en", en);
     }
 

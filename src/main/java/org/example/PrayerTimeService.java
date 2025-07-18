@@ -8,24 +8,27 @@ import java.net.http.HttpResponse;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import org.json.JSONObject;
 
 public class PrayerTimeService {
     private final HttpClient client = HttpClient.newBuilder().connectTimeout(java.time.Duration.ofSeconds(15)).build();
-    private final Map<String, String> cityCache = new HashMap<>(); // Cache for coordinates -> city name
+    private final Map<String, String> cityCache = new HashMap<>();
 
     public String getPrayerTimes(double latitude, double longitude, String day, String language) {
         try {
             String date = day.equals("today") ? LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
                     : LocalDate.now().plusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE);
-            String url = String.format("http://api.aladhan.com/v1/timings/%s?latitude=%f&longitude=%f&method=2",
-                    date, latitude, longitude);
+            String latStr = String.format(Locale.US, "%.6f", latitude);
+            String lonStr = String.format(Locale.US, "%.6f", longitude);
+            String url = String.format("http://api.aladhan.com/v1/timings/%s?latitude=%s&longitude=%s&method=2&school=1",
+                    date, latStr, lonStr);
             System.out.println("Requesting prayer times from: " + url);
             HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).timeout(java.time.Duration.ofSeconds(15)).build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             System.out.println("API response status: " + response.statusCode());
+            System.out.println("API response body: " + response.body());
 
             JSONObject json = new JSONObject(response.body()).getJSONObject("data").getJSONObject("timings");
             String city = getCityName(latitude, longitude, language);
@@ -49,12 +52,15 @@ public class PrayerTimeService {
             String city = getCityName(latitude, longitude, language);
             for (int i = 0; i < 7; i++) {
                 String date = startDate.plusDays(i).format(DateTimeFormatter.ISO_LOCAL_DATE);
-                String url = String.format("http://api.aladhan.com/v1/timings/%s?latitude=%f&longitude=%f&method=2",
-                        date, latitude, longitude);
+                String latStr = String.format(Locale.US, "%.6f", latitude);
+                String lonStr = String.format(Locale.US, "%.6f", longitude);
+                String url = String.format("http://api.aladhan.com/v1/timings/%s?latitude=%s&longitude=%s&method=2&school=1",
+                        date, latStr, lonStr);
                 System.out.println("Requesting weekly prayer times from: " + url);
                 HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).timeout(java.time.Duration.ofSeconds(15)).build();
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
                 System.out.println("API response status: " + response.statusCode());
+                System.out.println("API response body: " + response.body());
 
                 JSONObject json = new JSONObject(response.body()).getJSONObject("data").getJSONObject("timings");
                 result.append(formatDayPrayerTimes(json, startDate.plusDays(i).toString(), language));
@@ -80,7 +86,9 @@ public class PrayerTimeService {
         }
 
         try {
-            String url = String.format("https://nominatim.openstreetmap.org/reverse?format=json&lat=%f&lon=%f", latitude, longitude);
+            String latStr = String.format(Locale.US, "%.6f", latitude);
+            String lonStr = String.format(Locale.US, "%.6f", longitude);
+            String url = String.format("https://nominatim.openstreetmap.org/reverse?format=json&lat=%s&lon=%s", latStr, lonStr);
             System.out.println("Requesting city name from: " + url);
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
@@ -88,9 +96,15 @@ public class PrayerTimeService {
                     .timeout(java.time.Duration.ofSeconds(15))
                     .build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            System.out.println("API response status: " + response.statusCode());
+            System.out.println("Nominatim response status: " + response.statusCode() + ", Body: " + response.body());
 
             JSONObject json = new JSONObject(response.body());
+            if (json.has("error")) {
+                JSONObject error = json.getJSONObject("error");
+                String errorMessage = error.getString("message");
+                System.out.println("Nominatim error: " + errorMessage);
+                return LanguageUtil.getMessage("unknown_location", language);
+            }
             String city = json.getJSONObject("address").optString("city", "");
             if (city.isEmpty()) {
                 city = json.getJSONObject("address").optString("town", "");
@@ -128,7 +142,7 @@ public class PrayerTimeService {
                 LanguageUtil.getMessage("asr", language), timings.getString("Asr"),
                 LanguageUtil.getMessage("maghrib", language), timings.getString("Maghrib"),
                 LanguageUtil.getMessage("isha", language), timings.getString("Isha"),
-                LanguageUtil.getMessage("location", language), city);
+                LanguageUtil.getMessage("location", language), city.isEmpty() ? LanguageUtil.getMessage("unknown_location", language) : city);
     }
 
     private String formatDayPrayerTimes(JSONObject timings, String date, String language) {

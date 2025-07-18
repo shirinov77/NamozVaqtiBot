@@ -23,6 +23,10 @@ public class KeyboardUtil {
         row2.add(createInlineButton("🗓 " + LanguageUtil.getMessage("week", language), "week"));
         rows.add(row2);
 
+        List<InlineKeyboardButton> row3 = new ArrayList<>();
+        row3.add(createInlineButton("📿 " + LanguageUtil.getMessage("tasbih", language), "tasbih"));
+        rows.add(row3);
+
         markup.setKeyboard(rows);
         return markup;
     }
@@ -33,9 +37,13 @@ public class KeyboardUtil {
         markup.setOneTimeKeyboard(true);
 
         KeyboardRow row = new KeyboardRow();
-        KeyboardButton button = new KeyboardButton(LanguageUtil.getMessage("send_location", language));
-        button.setRequestLocation(true);
-        row.add(button);
+        KeyboardButton locationButton = new KeyboardButton(LanguageUtil.getMessage("send_location", language));
+        locationButton.setRequestLocation(true);
+        row.add(locationButton);
+
+        KeyboardButton contactButton = new KeyboardButton(LanguageUtil.getMessage("send_contact", language));
+        contactButton.setRequestContact(true);
+        row.add(contactButton);
 
         List<KeyboardRow> keyboard = new ArrayList<>();
         keyboard.add(row);
