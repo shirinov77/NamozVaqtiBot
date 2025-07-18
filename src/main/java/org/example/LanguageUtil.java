@@ -8,7 +8,7 @@ public class LanguageUtil {
 
     static {
         Map<String, String> uz = new HashMap<>();
-        uz.put("welcome_message", "🕌 Namoz Vaqtlari Botiga xush kelibsiz!");
+        uz.put("welcome_message", "🕌 Assalamu Alaikum! Namoz Vaqtlari Botiga xush kelibsiz!");
         uz.put("send_location_prompt", "📍 Iltimos, joylashuvingizni yuboring!");
         uz.put("prayer_times", "uchun namoz vaqtlari");
         uz.put("today", "Bugun");
@@ -27,8 +27,8 @@ public class LanguageUtil {
         uz.put("language_changed", "🌐 Til o'zgartirildi!");
         uz.put("language_prompt", "🌐 Tilni tanlang:");
         uz.put("notifications_prompt", "🔔 Bildirishnomalarni sozlash:");
-        uz.put("enable_notifications", "Yoqish");
-        uz.put("disable_notifications", "O'chirish");
+        uz.put("enable_notifications", "Yoqish✅");
+        uz.put("disable_notifications", "O'chirish❌");
         uz.put("notifications_on", "🔔 Bildirishnomalar yoqildi!");
         uz.put("notifications_off", "🔕 Bildirishnomalar o'chirildi!");
         uz.put("current_time", "Hozirgi vaqt");
@@ -36,7 +36,7 @@ public class LanguageUtil {
         translations.put("uz", uz);
 
         Map<String, String> en = new HashMap<>();
-        en.put("welcome_message", "🕌 Welcome to the Prayer Times Bot!");
+        en.put("welcome_message", "🕌 Assalamu Alaikum! Welcome to the Prayer Times Bot!");
         en.put("send_location_prompt", "📍 Please send your location!");
         en.put("prayer_times", "prayer times for");
         en.put("today", "Today");

@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
 import org.json.JSONObject;
 
 public class PrayerTimeService {
-    private final HttpClient client = HttpClient.newBuilder().connectTimeout(java.time.Duration.ofSeconds(10)).build();
+    private final HttpClient client = HttpClient.newBuilder().connectTimeout(java.time.Duration.ofSeconds(15)).build();
     private final Map<String, String> cityCache = new HashMap<>(); // Cache for coordinates -> city name
 
     public String getPrayerTimes(double latitude, double longitude, String day, String language) {
@@ -22,13 +22,22 @@ public class PrayerTimeService {
                     : LocalDate.now().plusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE);
             String url = String.format("http://api.aladhan.com/v1/timings/%s?latitude=%f&longitude=%f&method=2",
                     date, latitude, longitude);
-            HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).timeout(java.time.Duration.ofSeconds(10)).build();
+            System.out.println("Requesting prayer times from: " + url);
+            HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).timeout(java.time.Duration.ofSeconds(15)).build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            System.out.println("API response status: " + response.statusCode());
 
             JSONObject json = new JSONObject(response.body()).getJSONObject("data").getJSONObject("timings");
             String city = getCityName(latitude, longitude, language);
             return formatPrayerTimes(json, city, day, language);
-        } catch (IOException | InterruptedException e) {
+        } catch (IOException e) {
+            System.out.println("IOException in getPrayerTimes: " + e.getMessage());
+            return LanguageUtil.getMessage("error_prayer_times", language);
+        } catch (InterruptedException e) {
+            System.out.println("InterruptedException in getPrayerTimes: " + e.getMessage());
+            return LanguageUtil.getMessage("error_prayer_times", language);
+        } catch (Exception e) {
+            System.out.println("Unexpected error in getPrayerTimes: " + e.getMessage());
             return LanguageUtil.getMessage("error_prayer_times", language);
         }
     }
@@ -42,15 +51,24 @@ public class PrayerTimeService {
                 String date = startDate.plusDays(i).format(DateTimeFormatter.ISO_LOCAL_DATE);
                 String url = String.format("http://api.aladhan.com/v1/timings/%s?latitude=%f&longitude=%f&method=2",
                         date, latitude, longitude);
-                HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).timeout(java.time.Duration.ofSeconds(10)).build();
+                System.out.println("Requesting weekly prayer times from: " + url);
+                HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).timeout(java.time.Duration.ofSeconds(15)).build();
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                System.out.println("API response status: " + response.statusCode());
 
                 JSONObject json = new JSONObject(response.body()).getJSONObject("data").getJSONObject("timings");
                 result.append(formatDayPrayerTimes(json, startDate.plusDays(i).toString(), language));
             }
             result.append(String.format("\n📍 %s: %s", LanguageUtil.getMessage("location", language), city));
             return result.toString();
-        } catch (IOException | InterruptedException e) {
+        } catch (IOException e) {
+            System.out.println("IOException in getWeeklyPrayerTimes: " + e.getMessage());
+            return LanguageUtil.getMessage("error_prayer_times", language);
+        } catch (InterruptedException e) {
+            System.out.println("InterruptedException in getWeeklyPrayerTimes: " + e.getMessage());
+            return LanguageUtil.getMessage("error_prayer_times", language);
+        } catch (Exception e) {
+            System.out.println("Unexpected error in getWeeklyPrayerTimes: " + e.getMessage());
             return LanguageUtil.getMessage("error_prayer_times", language);
         }
     }
@@ -63,12 +81,15 @@ public class PrayerTimeService {
 
         try {
             String url = String.format("https://nominatim.openstreetmap.org/reverse?format=json&lat=%f&lon=%f", latitude, longitude);
+            System.out.println("Requesting city name from: " + url);
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
                     .header("User-Agent", "NamozBot/1.0")
-                    .timeout(java.time.Duration.ofSeconds(10))
+                    .timeout(java.time.Duration.ofSeconds(15))
                     .build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            System.out.println("API response status: " + response.statusCode());
+
             JSONObject json = new JSONObject(response.body());
             String city = json.getJSONObject("address").optString("city", "");
             if (city.isEmpty()) {
@@ -79,7 +100,14 @@ public class PrayerTimeService {
             }
             cityCache.put(cacheKey, city);
             return city;
-        } catch (IOException | InterruptedException e) {
+        } catch (IOException e) {
+            System.out.println("IOException in getCityName: " + e.getMessage());
+            return LanguageUtil.getMessage("unknown_location", language);
+        } catch (InterruptedException e) {
+            System.out.println("InterruptedException in getCityName: " + e.getMessage());
+            return LanguageUtil.getMessage("unknown_location", language);
+        } catch (Exception e) {
+            System.out.println("Unexpected error in getCityName: " + e.getMessage());
             return LanguageUtil.getMessage("unknown_location", language);
         }
     }

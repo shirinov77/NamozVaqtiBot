@@ -72,17 +72,26 @@ public class NamozBot extends TelegramLongPollingBot {
         String language = userLanguages.getOrDefault(chatId, "uz");
         String currentTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
-        String messageText = LanguageUtil.getMessage("welcome_message", language) + "\n🕒 " +
+        // Send welcome message
+        String welcomeText = LanguageUtil.getMessage("welcome_message", language) + "\n🕒 " +
                 LanguageUtil.getMessage("current_time", language) + ": " + currentTime;
 
-        SendMessage message = new SendMessage();
-        message.setChatId(chatId);
-        message.setText(messageText);
-        message.setReplyMarkup(keyboardUtil.getMainMenu(language));
+        SendMessage welcomeMessage = new SendMessage();
+        welcomeMessage.setChatId(chatId);
+        welcomeMessage.setText(welcomeText);
+        org.telegram.telegrambots.meta.api.objects.Message sentWelcome = execute(welcomeMessage);
+        lastMessageIds.put(chatId, sentWelcome.getMessageId());
+        lastMessageText.put(chatId, welcomeText);
 
-        org.telegram.telegrambots.meta.api.objects.Message sentMessage = execute(message);
-        lastMessageIds.put(chatId, sentMessage.getMessageId());
-        lastMessageText.put(chatId, messageText);
+        // Prompt for location
+        String locationPrompt = LanguageUtil.getMessage("send_location_prompt", language);
+        SendMessage locationMessage = new SendMessage();
+        locationMessage.setChatId(chatId);
+        locationMessage.setText(locationPrompt);
+        locationMessage.setReplyMarkup(keyboardUtil.getLocationButton(language));
+        org.telegram.telegrambots.meta.api.objects.Message sentLocationPrompt = execute(locationMessage);
+        lastMessageIds.put(chatId, sentLocationPrompt.getMessageId());
+        lastMessageText.put(chatId, locationPrompt);
     }
 
     private void handleLanguageCommand(Update update) throws TelegramApiException {
@@ -128,57 +137,43 @@ public class NamozBot extends TelegramLongPollingBot {
         String language = userLanguages.getOrDefault(chatId, "uz");
         double latitude = update.getMessage().getLocation().getLatitude();
         double longitude = update.getMessage().getLocation().getLongitude();
-        Integer messageId = lastMessageIds.get(chatId);
-        String prayerType = lastPrayerType.getOrDefault(chatId, "today");
 
+        // Store user location
         userLocations.put(chatId, new double[]{latitude, longitude});
 
-        EditMessageText message = new EditMessageText();
+        // Send new message with welcome text and inline keyboard
+        String welcomeText = LanguageUtil.getMessage("welcome_message", language);
+        SendMessage message = new SendMessage();
         message.setChatId(chatId);
-        message.setMessageId(messageId != null ? messageId : update.getMessage().getMessageId());
+        message.setText(welcomeText);
         message.setReplyMarkup(keyboardUtil.getMainMenu(language));
+        org.telegram.telegrambots.meta.api.objects.Message sentMessage = execute(message);
+        lastMessageIds.put(chatId, sentMessage.getMessageId());
+        lastMessageText.put(chatId, welcomeText);
 
-        String newText;
-        switch (prayerType) {
-            case "today":
-                newText = prayerTimeService.getPrayerTimes(latitude, longitude, "today", language);
-                break;
-            case "tomorrow":
-                newText = prayerTimeService.getPrayerTimes(latitude, longitude, "tomorrow", language);
-                break;
-            case "week":
-                newText = prayerTimeService.getWeeklyPrayerTimes(latitude, longitude, language);
-                break;
-            default:
-                newText = LanguageUtil.getMessage("error_prayer_times", language);
-        }
-
-        if (!Objects.equals(newText, lastMessageText.get(chatId))) {
-            message.setText(newText);
-            execute(message);
-            lastMessageText.put(chatId, newText);
-        }
+        System.out.println("Location received for chatId " + chatId + ": [" + latitude + ", " + longitude + "]");
     }
 
     private void handleCallbackQuery(Update update) throws TelegramApiException {
         String chatId = update.getCallbackQuery().getMessage().getChatId().toString();
         String callbackData = update.getCallbackQuery().getData();
         String language = userLanguages.getOrDefault(chatId, "uz");
-        Integer messageId = lastMessageIds.get(chatId);
+        Integer messageId = update.getCallbackQuery().getMessage().getMessageId(); // Use callback query message ID
+        System.out.println("Callback received for chatId " + chatId + ": callbackData = " + callbackData);
 
+        EditMessageText message = new EditMessageText();
+        message.setChatId(chatId);
+        message.setMessageId(messageId);
+        message.setReplyMarkup(keyboardUtil.getMainMenu(language));
+
+        String newText;
         if (callbackData.startsWith("lang_")) {
             String newLanguage = callbackData.split("_")[1];
             userLanguages.put(chatId, newLanguage);
-            String prayerType = lastPrayerType.getOrDefault(chatId, "today");
-
-            EditMessageText message = new EditMessageText();
-            message.setChatId(chatId);
-            message.setMessageId(messageId != null ? messageId : update.getCallbackQuery().getMessage().getMessageId());
-            message.setReplyMarkup(keyboardUtil.getMainMenu(newLanguage));
-
-            String newText;
+            newText = LanguageUtil.getMessage("language_changed", newLanguage);
             if (userLocations.containsKey(chatId)) {
                 double[] coords = userLocations.get(chatId);
+                String prayerType = lastPrayerType.getOrDefault(chatId, "today");
                 switch (prayerType) {
                     case "today":
                         newText = prayerTimeService.getPrayerTimes(coords[0], coords[1], "today", newLanguage);
@@ -189,88 +184,47 @@ public class NamozBot extends TelegramLongPollingBot {
                     case "week":
                         newText = prayerTimeService.getWeeklyPrayerTimes(coords[0], coords[1], newLanguage);
                         break;
-                    default:
-                        newText = LanguageUtil.getMessage("language_changed", newLanguage);
                 }
-            } else {
-                newText = LanguageUtil.getMessage("language_changed", newLanguage);
             }
-
-            if (!Objects.equals(newText, lastMessageText.get(chatId))) {
-                message.setText(newText);
-                execute(message);
-                lastMessageText.put(chatId, newText);
-            }
-            return;
-        }
-
-        if (callbackData.startsWith("notif_")) {
+        } else if (callbackData.startsWith("notif_")) {
             String status = callbackData.split("_")[1];
-            String newText = LanguageUtil.getMessage("notifications_" + status, language);
-
-            if (Objects.equals(newText, lastMessageText.get(chatId))) {
-                return; // Avoid redundant edit
-            }
-
-            EditMessageText message = new EditMessageText();
-            message.setChatId(chatId);
-            message.setMessageId(messageId != null ? messageId : update.getCallbackQuery().getMessage().getMessageId());
-            message.setText(newText);
-            message.setReplyMarkup(keyboardUtil.getMainMenu(language));
-            execute(message);
-            lastMessageText.put(chatId, newText);
-            return;
-        }
-
-        if (!userLocations.containsKey(chatId)) {
-            String newText = LanguageUtil.getMessage("send_location_prompt", language);
-
-            if (Objects.equals(newText, lastMessageText.get(chatId))) {
+            newText = LanguageUtil.getMessage("notifications_" + status, language);
+        } else {
+            if (!userLocations.containsKey(chatId)) {
+                newText = LanguageUtil.getMessage("send_location_prompt", language);
+                SendMessage sendMessage = new SendMessage();
+                sendMessage.setChatId(chatId);
+                sendMessage.setText(newText);
+                sendMessage.setReplyMarkup(keyboardUtil.getLocationButton(language));
+                execute(sendMessage);
+                lastMessageText.put(chatId, newText);
+                lastPrayerType.put(chatId, callbackData);
                 return;
             }
-
-            SendMessage message = new SendMessage();
-            message.setChatId(chatId.toString());
-            message.setText(newText);
-            message.setReplyMarkup(keyboardUtil.getLocationButton(language));
-
-            execute(message);
-
-            lastMessageText.put(chatId, newText);
             lastPrayerType.put(chatId, callbackData);
-            return;
-        }
-
-
-        lastPrayerType.put(chatId, callbackData);
-        double[] coords = userLocations.get(chatId);
-        double latitude = coords[0];
-        double longitude = coords[1];
-
-        EditMessageText message = new EditMessageText();
-        message.setChatId(chatId);
-        message.setMessageId(messageId != null ? messageId : update.getCallbackQuery().getMessage().getMessageId());
-        message.setReplyMarkup(keyboardUtil.getMainMenu(language));
-
-        String newText;
-        switch (callbackData) {
-            case "today":
-                newText = prayerTimeService.getPrayerTimes(latitude, longitude, "today", language);
-                break;
-            case "tomorrow":
-                newText = prayerTimeService.getPrayerTimes(latitude, longitude, "tomorrow", language);
-                break;
-            case "week":
-                newText = prayerTimeService.getWeeklyPrayerTimes(latitude, longitude, language);
-                break;
-            default:
-                newText = LanguageUtil.getMessage("unknown_command", language);
+            double[] coords = userLocations.get(chatId);
+            switch (callbackData) {
+                case "today":
+                    newText = prayerTimeService.getPrayerTimes(coords[0], coords[1], "today", language);
+                    break;
+                case "tomorrow":
+                    newText = prayerTimeService.getPrayerTimes(coords[0], coords[1], "tomorrow", language);
+                    break;
+                case "week":
+                    newText = prayerTimeService.getWeeklyPrayerTimes(coords[0], coords[1], language);
+                    break;
+                default:
+                    newText = LanguageUtil.getMessage("unknown_command", language);
+            }
         }
 
         if (!Objects.equals(newText, lastMessageText.get(chatId))) {
             message.setText(newText);
             execute(message);
             lastMessageText.put(chatId, newText);
+            lastMessageIds.put(chatId, messageId);
+        } else {
+            System.out.println("No update needed for chatId " + chatId + ": same text");
         }
     }
 }
