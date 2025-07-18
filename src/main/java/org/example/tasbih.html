@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elektron Tasbih</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Arial', sans-serif;
+        }
+        .tasbih-container {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            padding: 2rem;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        .counter {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #1e3a8a;
+            margin: 1rem 0;
+        }
+        .zikr-list {
+            max-height: 150px;
+            overflow-y: auto;
+            margin-top: 1rem;
+            padding: 0.5rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+<div class="tasbih-container">
+    <h1 class="text-2xl font-bold text-gray-800 mb-4">📿 Elektron Tasbih</h1>
+    <div class="counter" id="counter">0</div>
+    <button onclick="incrementCounter()" class="bg-blue-600 text-white px-6 py-3 rounded-full hover:bg-blue-700 transition mb-4">Zikr qilish</button>
+    <button onclick="resetCounter()" class="bg-red-600 text-white px-6 py-3 rounded-full hover:bg-red-700 transition mb-4">Qayta boshlash</button>
+    <div class="zikr-list" id="zikrList">
+        <p class="text-gray-600">Subhanallah</p>
+        <p class="text-gray-600">Alhamdulillah</p>
+        <p class="text-gray-600">Allahu Akbar</p>
+    </div>
+</div>
+
+<script>
+    let count = 0;
+    const counterElement = document.getElementById('counter');
+    const zikrListElement = document.getElementById('zikrList');
+
+    function incrementCounter() {
+        count++;
+        counterElement.textContent = count;
+        if (count % 33 === 0) {
+            alert('33 ta zikr yakunlandi! Keyingi zikrga o‘ting.');
+        }
+    }
+
+    function resetCounter() {
+        count = 0;
+        counterElement.textContent = count;
+    }
+</script>
+</body>
+</html>
