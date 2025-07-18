@@ -224,20 +224,23 @@ public class NamozBot extends TelegramLongPollingBot {
 
         if (!userLocations.containsKey(chatId)) {
             String newText = LanguageUtil.getMessage("send_location_prompt", language);
+
             if (Objects.equals(newText, lastMessageText.get(chatId))) {
-                return; // Avoid redundant edit
+                return;
             }
 
-            EditMessageText message = new EditMessageText();
-            message.setChatId(chatId);
-            message.setMessageId(messageId != null ? messageId : update.getCallbackQuery().getMessage().getMessageId());
+            SendMessage message = new SendMessage();
+            message.setChatId(chatId.toString());
             message.setText(newText);
             message.setReplyMarkup(keyboardUtil.getLocationButton(language));
+
             execute(message);
+
             lastMessageText.put(chatId, newText);
             lastPrayerType.put(chatId, callbackData);
             return;
         }
+
 
         lastPrayerType.put(chatId, callbackData);
         double[] coords = userLocations.get(chatId);
