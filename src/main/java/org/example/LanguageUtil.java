@@ -36,6 +36,7 @@ public class LanguageUtil {
         uz.put("unknown_location", "Noma'lum joylashuv");
         uz.put("phone_saved", "📱 Telefon raqami saqlandi!");
         uz.put("tasbih", "Elektron Tasbih");
+        uz.put("qibla", "Qibla Yo'nalishi");
         translations.put("uz", uz);
 
         Map<String, String> en = new HashMap<>();
@@ -67,6 +68,7 @@ public class LanguageUtil {
         en.put("unknown_location", "Unknown location");
         en.put("phone_saved", "📱 Phone number saved!");
         en.put("tasbih", "Electronic Tasbih");
+        en.put("qibla", "Qibla Direction");
         translations.put("en", en);
     }
 

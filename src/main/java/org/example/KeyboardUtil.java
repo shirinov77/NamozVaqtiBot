@@ -5,6 +5,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMar
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
+import org.telegram.telegrambots.meta.api.objects.webapp.WebAppInfo;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,8 +25,18 @@ public class KeyboardUtil {
         rows.add(row2);
 
         List<InlineKeyboardButton> row3 = new ArrayList<>();
-        row3.add(createInlineButton("📿 " + LanguageUtil.getMessage("tasbih", language), "tasbih"));
+        InlineKeyboardButton tasbihButton = new InlineKeyboardButton();
+        tasbihButton.setText(LanguageUtil.getMessage("tasbih", language));
+        tasbihButton.setWebApp(new WebAppInfo("https://www.al-habib.info/qibla-pointer/online-qibla-compass.html")); // Tasbeh veb-ilovasi URL
+        row3.add(tasbihButton);
         rows.add(row3);
+
+        List<InlineKeyboardButton> row4 = new ArrayList<>();
+        InlineKeyboardButton qiblaButton = new InlineKeyboardButton();
+        qiblaButton.setText(LanguageUtil.getMessage("qibla", language));
+        qiblaButton.setWebApp(new WebAppInfo("https://qiblafinder.io")); // Qibla veb-ilovasi URL
+        row4.add(qiblaButton);
+        rows.add(row4);
 
         markup.setKeyboard(rows);
         return markup;

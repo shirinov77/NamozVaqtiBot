@@ -224,10 +224,6 @@ public class NamozBot extends TelegramLongPollingBot {
         } else if (callbackData.startsWith("notif_")) {
             String status = callbackData.split("_")[1];
             newText = LanguageUtil.getMessage("notifications_" + status, language);
-        } else if (callbackData.equals("tasbih")) {
-            newText = LanguageUtil.getMessage("tasbih", language) + ":\n" +
-                    "📿 Elektron tasbihni ochish uchun quyidagi havolaga o‘ting:\n" +
-                    "https://your-tasbih-app.netlify.app"; // O‘zingizning URL manzilingizni qo‘ying
         } else {
             if (!userLocations.containsKey(chatId)) {
                 newText = LanguageUtil.getMessage("send_location_prompt", language);

@@ -13,7 +13,7 @@ import java.util.Map;
 import org.json.JSONObject;
 
 public class PrayerTimeService {
-    private final HttpClient client = HttpClient.newBuilder().connectTimeout(java.time.Duration.ofSeconds(15)).build();
+    private final HttpClient client = HttpClient.newBuilder().connectTimeout(java.time.Duration.ofSeconds(1)).build();
     private final Map<String, String> cityCache = new HashMap<>();
 
     public String getPrayerTimes(double latitude, double longitude, String day, String language) {
